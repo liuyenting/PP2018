@@ -3,8 +3,7 @@
 #include <stdlib.h>
 #include <omp.h>
 
-#define MAXN 2048
-#define SIDE (MAXN + 2)
+#define SIDE 2048
 
 #define nLiveNeighbor(A, i, j) \
     A[i + 1][j] + A[i - 1][j] + A[i][j + 1] + \
