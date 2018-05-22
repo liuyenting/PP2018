@@ -4,59 +4,50 @@
 #include <CL/cl.h>
 
 int main(void) {
+    printf("Hello, OpenCL\n");
     cl_int status;
-
-    // query platforms and devices
     cl_platform_id platform_id;
-    status = clGetPlatformIDs(1, &platform_id, NULL);
+    cl_uint platform_id_got;
+    status = clGetPlatformIDs(1, &platform_id,
+  			    &platform_id_got);
+    assert(status == CL_SUCCESS && platform_id_got == 1);
+    printf("%d platform found\n", platform_id_got);
+    cl_device_id GPU[MAXGPU];
+    cl_uint GPU_id_got;
+    status = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU,
+  			  MAXGPU, GPU, &GPU_id_got);
     assert(status == CL_SUCCESS);
-
-    cl_device_id device_id;
-    status = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_DEFAULT, 1, &device_id, NULL);
+    printf("There are %d GPU devices\n", GPU_id_got);
+    /* getcontext */
+    cl_context context =
+      clCreateContext(NULL, GPU_id_got, GPU, NULL, NULL,
+  		    &status);
     assert(status == CL_SUCCESS);
-
-    // create context
-    const cl_context_properties properties[] = {
-        CL_CONTEXT_PLATFORM, (cl_context_properties)platform_id,
-        0
-    };
-    cl_context context = clCreateContext(properties, 1, &device_id, NULL, NULL, &status);
+    /* commandqueue */
+    cl_command_queue commandQueue =
+      clCreateCommandQueue(context, GPU[0], 0, &status);
     assert(status == CL_SUCCESS);
-
-    char filename[30];
-    scanf("%s", filename);
-
-    // create program
-    unsigned char *program_file = NULL;
-    size_t program_size = 0;
-    FILE *fp = fopen(filename, "rb");
-    assert(fp != 0);
-    fseek(fp, 0, SEEK_END);
-    program_size = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
-    program_file = malloc(program_size);
-    if (!program_file) {
-        fclose(fp);
-        assert(program_file != 0);
-    }
-    fread(program_file, program_size, 1, fp);
-    fclose(fp);
-
-    cl_program program = clCreateProgramWithSource(context, 1, (const char **)&program_file, &program_size, &status);
+    /* kernelsource */
+    FILE *kernelfp = fopen(argv[1], "r");
+    assert(kernelfp != NULL);
+    char kernelBuffer[MAXK];
+    const char *constKernelSource = kernelBuffer;
+    size_t kernelLength =
+      fread(kernelBuffer, 1, MAXK, kernelfp);
+    printf("The size of kernel source is %zu\n", kernelLength);
+    cl_program program =
+      clCreateProgramWithSource(context, 1, &constKernelSource,
+  			      &kernelLength, &status);
     assert(status == CL_SUCCESS);
+    /* buildprogram */
+    status =
+      clBuildProgram(program, GPU_id_got, GPU, NULL, NULL,
+  		   NULL);
+    assert(status == CL_SUCCESS);
+    printf("Build program completes\n");
 
-    // retrieve build log
-    size_t len = 0;
-    status = clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, 0, NULL, &len);
-    char *build_log = calloc(len, sizeof(char));
-    status = clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, len, build_log, NULL);
-    printf("%s", build_log);
-    free(build_log);
-
-    // release resources
     clReleaseProgram(program);
-    clReleaseContext(context);
-    clReleaseDevice(device_id);
+    clReleaseContext(context);	/* context etcmake */
 
     return 0;
 }
