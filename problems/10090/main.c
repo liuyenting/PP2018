@@ -1,9 +1,11 @@
 #include <sys/stat.h>
-
 #include <stdio.h>
-#include <assert.h>
+#include <stdlib.h>
 #include <omp.h>
 #include <inttypes.h>
+
+#include <CL/cl.h>
+
 #include "utils.h"
 
 #define MAXN 16777216
