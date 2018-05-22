@@ -1,18 +1,18 @@
 #include <CL/cl.h>
 
-static inline cl_uint rotate_left(cl_uint x, cl_uint n) {
+static inline unsigned int rotate_left(unsigned int x, unsigned int n) {
     return  (x << n) | (x >> (32-n));
 }
 
-static inline cl_uint encrypt(cl_uint m, cl_uint key) {
+static inline unsigned int encrypt(unsigned int m, unsigned int key) {
     return (rotate_left(m, key&31) + key)^key;
 }
 
 __kernel void vecmul(
-    const cl_uint key1,
-    const cl_uint key2,
-    __global cl_uint* prod,
-    const cl_uint N
+    const unsigned int key1,
+    const unsigned int key2,
+    __global unsigned int* prod,
+    const unsigned int N
 ) {
     int i = get_global_id(0);
     if (i >= N) {
