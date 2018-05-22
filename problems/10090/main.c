@@ -31,7 +31,7 @@ load_program_source(const char *filename) {
 int main(int argc, char *argv[]) {
     int err;
     cl_mem buffer;
-    unsigned int h_buffer[MAXN];
+    unsigned int *h_buffer;
 
     /* query platform and device id */
     cl_platform_id platform_id;
@@ -48,6 +48,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "failed to load program from file\n");
         return EXIT_FAILURE;
     }
+    printf("dump [\n%s]\n", source);
 
     /* create context */
     cl_context context;
@@ -72,6 +73,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "failed to allocate result buffer on device\n");
         return EXIT_FAILURE;
     }
+    h_buffer = malloc(buf_size);
 
     /* create and build program */
     cl_program program =
