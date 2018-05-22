@@ -15,7 +15,7 @@ __kernel void vecmul(
 ) {
     int offset = get_global_id(0);
     unsigned int psum = 0;
-    for (int i = offset; i < N; i += block_size) {
+    for (int i = offset; i < N; i += N/block_size) {
         psum += encrypt(i, key1) * encrypt(i, key2);
     }
     prod[offset] = psum;
