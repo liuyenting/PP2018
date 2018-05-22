@@ -1,5 +1,3 @@
-#include <CL/cl.h>
-
 static inline unsigned int rotate_left(unsigned int x, unsigned int n) {
     return  (x << n) | (x >> (32-n));
 }
