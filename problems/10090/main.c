@@ -22,7 +22,7 @@ load_program_source(const char *filename) {
 
     stat(filename, &statbuf);
     source = (char *)malloc(statbuf.st_size + 1);
-    fread(source, statbuf.st_size, 1, fh);
+    int err = fread(source, statbuf.st_size, 1, fh);
     source[statbuf.st_size] = '\0';
 
     return source;
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
         char log_buf[2048];
         fprintf(stderr, "%s\n", source);
         fprintf(stderr, "failed to build program executable\n");
-        clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(build_log), log_buf, &len);
+        clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(log_buf), log_buf, &len);
         printf("%s\n", log_buf);
         return EXIT_FAILURE;
     }
