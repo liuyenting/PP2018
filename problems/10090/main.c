@@ -2,6 +2,7 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <inttypes.h>
 
 #include <CL/cl.h>
 
@@ -104,7 +105,8 @@ int main(int argc, char *argv[]) {
     int N;
     uint32_t key1, key2;
     while (scanf("%d %" PRIu32 " %" PRIu32, &N, &key1, &key2) == 3) {
-        for (int i = 0; i < N; i++) {
+	printf("N=%d\n", N);
+//        for (int i = 0; i < N; i++) {
             err = CL_SUCCESS;
             err |= clSetKernelArg(kernel, 0, sizeof(uint32_t), &key1);
             err |= clSetKernelArg(kernel, 1, sizeof(uint32_t), &key2);
@@ -115,8 +117,8 @@ int main(int argc, char *argv[]) {
                 return EXIT_FAILURE;
             }
 
-            size_t global = (N + 31)/32;
-            size_t local = 32;
+            size_t global = (N + 127)/128;
+            size_t local = 128;
 
             err = CL_SUCCESS;
             err |= clEnqueueNDRangeKernel(
@@ -132,13 +134,15 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr, "failed to execute kernel\n");
                 return EXIT_FAILURE;
             }
-        }
+  //      }
+	printf("waiting...\n");
 
         err = clFinish(command);
         if (err != CL_SUCCESS) {
             fprintf(stderr, "failed to wait for command queue to finish, %d\n", err);
             return EXIT_FAILURE;
         }
+	printf("readback...\n");
 
         /* read back the result */
         err = clEnqueueReadBuffer(command, buffer, CL_TRUE, 0, buf_size, h_buffer, 0, NULL, NULL);
