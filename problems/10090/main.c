@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
 
     free(source);
 
-    int N, bs = 128;
+    int N, bs = 512;
     uint32_t key1, key2;
     while (scanf("%d %" PRIu32 " %" PRIu32, &N, &key1, &key2) == 3) {
         err = CL_SUCCESS;
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
 
-        size_t local = 512;
+        size_t local = 1024;
         size_t global = ((N + bs-1)/bs + local-1)/local * local;
 
         err = CL_SUCCESS;
