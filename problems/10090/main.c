@@ -106,7 +106,8 @@ int main(int argc, char *argv[]) {
             err = CL_SUCCESS;
             err |= clSetKernelArg(kernel, 0, sizeof(uint32_t), &key1);
             err |= clSetKernelArg(kernel, 1, sizeof(uint32_t), &key2);
-            err |= clSetKernelArg(kernel,  0, sizeof(cl_mem), &buffer);
+            err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &buffer);
+            err |= clSetKernelArg(kernel, 3, sizeof(int), &N);
             if (err != CL_SUCCESS) {
                 fprintf(stderr, "failed to set kernel arguments\n");
                 return EXIT_FAILURE;
