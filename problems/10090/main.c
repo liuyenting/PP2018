@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
 
-        size_t local = 32;
+        size_t local = 512;
         size_t global = ((N + bs-1)/bs + local-1)/local * local;
 
         err = CL_SUCCESS;
@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
         }
 
         /* read back the result */
-        size_t psum_size = sizeof(unsigned int) * (global/local);
+        size_t psum_size = sizeof(unsigned int) * ((N + bs-1)/bs);
         err = clEnqueueReadBuffer(command, buffer, CL_TRUE, 0, psum_size, h_buffer, 0, NULL, NULL);
         if (err) {
             fprintf(stderr, "failed to read back results from the device\n");
@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
 #pragma omp parallel for schedule(static) \
                          reduction(+: sum)
         */
-        for (int i = 0; i < global/local; i++) {
+        for (int i = 0; i < (N + bs-1)/bs; i++) {
             sum += h_buffer[i];
         }
 
