@@ -56,7 +56,7 @@ int main(void) {
     // release resources
     clReleaseProgram(program);
     clReleaseContext(context);
-    clReleaseDevice(device);
+    clReleaseDevice(device_id);
 
     return 0;
 }
