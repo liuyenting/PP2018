@@ -10,7 +10,7 @@ __kernel void vecmul(
     const unsigned int key1,
     const unsigned int key2,
     __global unsigned int* prod,
-    const unsigned int N
+    const int N
 ) {
     int i = get_global_id(0);
     if (i >= N) {

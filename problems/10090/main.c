@@ -31,7 +31,7 @@ load_program_source(const char *filename) {
 int main(int argc, char *argv[]) {
     int err;
     cl_mem buffer;
-    uint32_t *h_buffer;
+    unsigned int h_buffer[MAXN];
 
     /* query platform and device id */
     cl_platform_id platform_id;
@@ -66,13 +66,12 @@ int main(int argc, char *argv[]) {
     }
 
     /* create buffer */
-    size_t buf_size = sizeof(uint32_t) * MAXN;
+    size_t buf_size = sizeof(unsigned int) * MAXN;
     buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, buf_size, NULL, NULL);
     if (!buffer) {
         fprintf(stderr, "failed to allocate result buffer on device\n");
         return EXIT_FAILURE;
     }
-    h_buffer = malloc(buf_size);
 
     /* create and build program */
     cl_program program =
@@ -105,47 +104,45 @@ int main(int argc, char *argv[]) {
     int N;
     uint32_t key1, key2;
     while (scanf("%d %" PRIu32 " %" PRIu32, &N, &key1, &key2) == 3) {
-	printf("N=%d\n", N);
-//        for (int i = 0; i < N; i++) {
-            err = CL_SUCCESS;
-            err |= clSetKernelArg(kernel, 0, sizeof(uint32_t), &key1);
-            err |= clSetKernelArg(kernel, 1, sizeof(uint32_t), &key2);
-            err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &buffer);
-            err |= clSetKernelArg(kernel, 3, sizeof(int), &N);
-            if (err != CL_SUCCESS) {
-                fprintf(stderr, "failed to set kernel arguments\n");
-                return EXIT_FAILURE;
-            }
+        printf("N=%d\n", N);
+        err = CL_SUCCESS;
+        err |= clSetKernelArg(kernel, 0, sizeof(unsigned int), &key1);
+        err |= clSetKernelArg(kernel, 1, sizeof(unsigned int), &key2);
+        err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &buffer);
+        err |= clSetKernelArg(kernel, 3, sizeof(int), &N);
+        if (err != CL_SUCCESS) {
+            fprintf(stderr, "failed to set kernel arguments\n");
+            return EXIT_FAILURE;
+        }
 
-            size_t global = (N + 127)/128;
-            size_t local = 128;
+        size_t global = (N + 127)/128;
+        size_t local = 128;
 
-            err = CL_SUCCESS;
-            err |= clEnqueueNDRangeKernel(
-                command,
-                kernel,
-                1,              // work dimension
-                NULL,           // global work offset
-                &global,        // global work size
-                &local,         // local work size
-                0, NULL, NULL   // events
-            );
-            if (err != CL_SUCCESS) {
-                fprintf(stderr, "failed to execute kernel\n");
-                return EXIT_FAILURE;
-            }
-  //      }
-	printf("waiting...\n");
+        err = CL_SUCCESS;
+        err |= clEnqueueNDRangeKernel(
+            command,
+            kernel,
+            1,              // work dimension
+            NULL,           // global work offset
+            &global,        // global work size
+            &local,         // local work size
+            0, NULL, NULL   // events
+        );
+        if (err != CL_SUCCESS) {
+            fprintf(stderr, "failed to execute kernel\n");
+            return EXIT_FAILURE;
+        }
+        printf("waiting...\n");
 
         err = clFinish(command);
         if (err != CL_SUCCESS) {
             fprintf(stderr, "failed to wait for command queue to finish, %d\n", err);
             return EXIT_FAILURE;
         }
-	printf("readback...\n");
+        printf("readback...\n");
 
         /* read back the result */
-        err = clEnqueueReadBuffer(command, buffer, CL_TRUE, 0, buf_size, h_buffer, 0, NULL, NULL);
+        err = clEnqueueReadBuffer(command, buffer, CL_TRUE, 0, buf_size, &h_buffer, 0, NULL, NULL);
         if (err) {
             fprintf(stderr, "failed to read back results from the device\n");
             return EXIT_FAILURE;
