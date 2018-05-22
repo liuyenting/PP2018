@@ -18,10 +18,9 @@ int main(void) {
         clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
     assert(status == CL_SUCCESS);
 
-
     /* create context */
     cl_context context =
-        clCreateContext(NULL, 1, device_id, NULL, NULL, &status);
+        clCreateContext(NULL, 1, &device_id, NULL, NULL, &status);
     assert(status == CL_SUCCESS);
 
     /* load program from file */
@@ -39,9 +38,14 @@ int main(void) {
     char *buffer = malloc(len);
     status = fread(buffer, len, 1, fp);
     cl_program program =
-      clCreateProgramWithSource(context, 1, (const char *)buffer, &len, &status);
+      clCreateProgramWithSource(context, 1, (const char **)&buffer, &len, &status);
     assert(status == CL_SUCCESS);
     free(buffer);
+
+    /* build program */
+    status = clBuildProgram(program, 1, &device_id, NULL, NULL, NULL);
+    //NOTE program will fail due to requirement
+    //assert(status == CL_SUCCESS);
 
     /* retrieve build log */
     status =
@@ -49,7 +53,8 @@ int main(void) {
     buffer = malloc(len);
     status =
         clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, len, buffer, NULL);
-    printf("%s", status);
+    assert(status == CL_SUCCESS);
+    printf("%s", buffer);
 
     /* release resources */
     clReleaseProgram(program);
