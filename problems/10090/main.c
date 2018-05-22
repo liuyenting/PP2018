@@ -48,7 +48,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "failed to load program from file\n");
         return EXIT_FAILURE;
     }
-    printf("dump [\n%s]\n", source);
 
     /* create context */
     cl_context context;
@@ -106,13 +105,12 @@ int main(int argc, char *argv[]) {
     int N, bs = 128;
     uint32_t key1, key2;
     while (scanf("%d %" PRIu32 " %" PRIu32, &N, &key1, &key2) == 3) {
-        printf("N=%d\n", N);
         err = CL_SUCCESS;
-        err |= clSetKernelArg(kernel, 0, sizeof(unsigned int), &key1);
-        err |= clSetKernelArg(kernel, 1, sizeof(unsigned int), &key2);
+        err |= clSetKernelArg(kernel, 0, sizeof(cl_uint), &key1);
+        err |= clSetKernelArg(kernel, 1, sizeof(cl_uint), &key2);
         err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &buffer);
-        err |= clSetKernelArg(kernel, 3, sizeof(int), &bs);
-        err |= clSetKernelArg(kernel, 4, sizeof(int), &N);
+        err |= clSetKernelArg(kernel, 3, sizeof(cl_int), &bs);
+        err |= clSetKernelArg(kernel, 4, sizeof(cl_int), &N);
         if (err != CL_SUCCESS) {
             fprintf(stderr, "failed to set kernel arguments\n");
             return EXIT_FAILURE;
@@ -135,17 +133,15 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "failed to execute kernel\n");
             return EXIT_FAILURE;
         }
-        printf("waiting...\n");
 
         err = clFinish(command);
         if (err != CL_SUCCESS) {
             fprintf(stderr, "failed to wait for command queue to finish, %d\n", err);
             return EXIT_FAILURE;
         }
-        printf("readback...\n");
 
         /* read back the result */
-        err = clEnqueueReadBuffer(command, buffer, CL_TRUE, 0, buf_size, &h_buffer, 0, NULL, NULL);
+        err = clEnqueueReadBuffer(command, buffer, CL_TRUE, 0, buf_size, h_buffer, 0, NULL, NULL);
         if (err) {
             fprintf(stderr, "failed to read back results from the device\n");
             return EXIT_FAILURE;
