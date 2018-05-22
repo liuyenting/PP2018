@@ -3,8 +3,8 @@
 #include "utils.h"
 
 __kernel void vecmul(
-    __global uint32_t key1,
-    __global uint32_t key2,
+    const uint32_t key1,
+    const uint32_t key2,
     __global uint32_t* prod,
     const uint32_t N
 ) {
