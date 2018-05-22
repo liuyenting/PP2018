@@ -1,3 +1,5 @@
+#include <CL/cl.h>
+
 static inline cl_uint rotate_left(cl_uint x, cl_uint n) {
     return  (x << n) | (x >> (32-n));
 }
