@@ -30,18 +30,17 @@ load_program_source(const char *filename) {
 
 int main(int argc, char *argv[]) {
     int err;
-    cl_device_id device_id;
-    cl_command_queue commands;
-    cl_context context;
     cl_mem buffer;
     uint32_t *h_buffer;
 
-    /* query device id */
-    err = clGetDeviceIDs(NULL, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
-    if (err != CL_SUCCESS) {
-        fprintf(stderr, "failed to locate a GPU device\n");
-        return EXIT_FAILURE;
-    }
+    /* query platform and device id */
+    cl_platform_id platform_id;
+    status = clGetPlatformIDs(1, &platform_id, NULL);
+    assert(err == CL_SUCCESS);
+
+    cl_device_id device_id;
+    err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
+    assert (err == CL_SUCCESS);
 
     /* load and build program */
     char *source = load_program_source("vecdot.cl");
@@ -51,6 +50,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* create context */
+    cl_context context;
     context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
     if (!context) {
         fprintf(stderr, "failed to create a compute context\n");
@@ -58,8 +58,9 @@ int main(int argc, char *argv[]) {
     }
 
     /* create command queue */
-    commands = clCreateCommandQueue(context, device_id, 0, &err);
-    if (!commands) {
+    cl_command_queue command;
+    command = clCreateCommandQueue(context, device_id, 0, &err);
+    if (!command) {
         fprintf(stderr, "failed to create a command commands\n");
         return EXIT_FAILURE;
     }
@@ -120,7 +121,7 @@ int main(int argc, char *argv[]) {
 
             err = CL_SUCCESS;
             err |= clEnqueueNDRangeKernel(
-                commands,
+                command,
                 kernel,
                 1,              // work dimension
                 NULL,           // global work offset
@@ -156,6 +157,15 @@ int main(int argc, char *argv[]) {
 
         printf("%" PRIu32 "\n", sum);
     }
+
+    /* release resources */
+    clReleaseKernel(kernel);
+    clReleaseProgram(program);
+    clReleaseMemObject(buffer);
+    clReleaseCommandQueue(command);
+    clReleaseContext(context);
+
+    free(h_buffer);
 
     return 0;
 }
