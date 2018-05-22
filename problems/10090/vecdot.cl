@@ -10,11 +10,11 @@ __kernel void vecmul(
     const unsigned int key1,
     const unsigned int key2,
     __global unsigned int* prod,
+    const int block_size,
     const int N
 ) {
-    int i = get_global_id(0);
-    if (i >= N) {
-        return;
+    int offset = get_global_id(0);
+    for (int i = offset; i < N; i += block_size) {
+        prod[i] = encrypt(i, key1) * encrypt(i, key2);
     }
-    prod[i] = encrypt(i, key1) * encrypt(i, key2);
 }

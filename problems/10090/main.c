@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
 
     free(source);
 
-    int N;
+    int N, bs = 128;
     uint32_t key1, key2;
     while (scanf("%d %" PRIu32 " %" PRIu32, &N, &key1, &key2) == 3) {
         printf("N=%d\n", N);
@@ -111,14 +111,15 @@ int main(int argc, char *argv[]) {
         err |= clSetKernelArg(kernel, 0, sizeof(unsigned int), &key1);
         err |= clSetKernelArg(kernel, 1, sizeof(unsigned int), &key2);
         err |= clSetKernelArg(kernel, 2, sizeof(cl_mem), &buffer);
-        err |= clSetKernelArg(kernel, 3, sizeof(int), &N);
+        err |= clSetKernelArg(kernel, 3, sizeof(int), &bs);
+        err |= clSetKernelArg(kernel, 4, sizeof(int), &N);
         if (err != CL_SUCCESS) {
             fprintf(stderr, "failed to set kernel arguments\n");
             return EXIT_FAILURE;
         }
 
-        size_t global = (N + 127)/128;
-        size_t local = 128;
+        size_t global = (N + 31)/32;
+        size_t local = 32;
 
         err = CL_SUCCESS;
         err |= clEnqueueNDRangeKernel(
