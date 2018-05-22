@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -135,7 +136,7 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        err = clFinish(commands);
+        err = clFinish(command);
         if (err != CL_SUCCESS) {
             fprintf(stderr, "failed to wait for command queue to finish, %d\n", err);
             return EXIT_FAILURE;
