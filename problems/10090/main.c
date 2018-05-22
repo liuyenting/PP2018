@@ -36,12 +36,12 @@ int main(int argc, char *argv[]) {
 
     /* query platform and device id */
     cl_platform_id platform_id;
-    status = clGetPlatformIDs(1, &platform_id, NULL);
+    err = clGetPlatformIDs(1, &platform_id, NULL);
     assert(err == CL_SUCCESS);
 
     cl_device_id device_id;
     err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
-    assert (err == CL_SUCCESS);
+    assert(err == CL_SUCCESS);
 
     /* load and build program */
     char *source = load_program_source("vecdot.cl");
@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
         }
 
         /* read back the result */
-        err = clEnqueueReadBuffer(commands, buffer, CL_TRUE, 0, buf_size, h_buffer, 0, NULL, NULL);
+        err = clEnqueueReadBuffer(command, buffer, CL_TRUE, 0, buf_size, h_buffer, 0, NULL, NULL);
         if (err) {
             fprintf(stderr, "failed to read back results from the device\n");
             return EXIT_FAILURE;
