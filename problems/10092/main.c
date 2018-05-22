@@ -3,7 +3,10 @@
 #include <stdlib.h>
 #include <CL/cl.h>
 
-int main(void) {
+#define MAXGPU 10
+#define MAXK 1024
+
+int main(int argc, char *argv[]) {
     printf("Hello, OpenCL\n");
     cl_int status;
     cl_platform_id platform_id;
