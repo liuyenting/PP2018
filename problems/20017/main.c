@@ -110,18 +110,23 @@ int main(int argc, char *argv[]) {
         // execute kernel
         N = (N + BATCH_SIZE*BLK_SIZE - 1) / (BATCH_SIZE*BLK_SIZE) * BLK_SIZE;
 
-        status = clEnqueueFillBuffer(command, d_buf, &ZERO, sizeof(uint32_t), 0, sizeof(uint32_t)*8, NULL, NULL);
+        status = clEnqueueFillBuffer(
+            command, d_buf,
+            &ZERO,              // pattern
+            sizeof(int),        // pattern size
+            0,                  // buffer offset
+            sizeof(uint32_t)*8, // buffer size
+            NULL, NULL, NULL    // events);
         assert(status == CL_SUCCESS);
 
         size_t global_size[] = { N };
         size_t local_size[] = { BLK_SIZE };
         status = clEnqueueNDRangeKernel(
-            command,
-            kernel,
+            command, kernel,
             1,              // work dimension
             NULL,           // global offset
-            &global_size,   // global size
-            &local_size,    // local size
+            global_size,    // global size
+            local_size,     // local size
             0, NULL, NULL   // events
         );
         assert(status == CL_SUCCESS);
