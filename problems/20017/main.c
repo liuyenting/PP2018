@@ -116,7 +116,8 @@ int main(int argc, char *argv[]) {
             sizeof(int),        // pattern size
             0,                  // buffer offset
             sizeof(uint32_t)*8, // buffer size
-            NULL, NULL, NULL    // events);
+            NULL, NULL, NULL    // events
+        );
         assert(status == CL_SUCCESS);
 
         size_t global_size[] = { N };
