@@ -15,8 +15,8 @@ __kernel void vecdot(
     uint32_t key1, uint32_t key2,
     __global uint32_t* out_buf
 ) {
-    __local uint32_t buf[BLK_SIZE+1];
-    uint32_t sum;
+    __local uint32_t buf[BLK_SIZE];
+    uint32_t sum = 0;
 
     // determine range
     int gid = get_global_id(0);
