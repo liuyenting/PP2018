@@ -40,15 +40,30 @@ __kernel void vecdot(
     barrier(CLK_LOCAL_MEM_FENCE);
 
     // local partial sum
-    for (int u = BLK_SIZE; u > 1; u >>= 1) {
-        int offset = (u+1) >> 1;
-        if (ind + offset < u) {
-            buf[ind] += buf[ind + offset];
-        }
+    if (ind < 128) {
+        buf[ind] += buf[ind + 128];
         barrier(CLK_LOCAL_MEM_FENCE);
     }
-
-    if (ind == 0) {
-        atomic_add(&out_buf[get_group_id(0)&7], buf[0]);
+    if (ind <  64) {
+        buf[ind] += buf[ind +  64];
+        barrier(CLK_LOCAL_MEM_FENCE);
     }
+    if (ind <  32) {
+        buf[ind] += buf[ind + 32];
+        barrier(CLK_LOCAL_MEM_FENCE);
+        buf[ind] += buf[ind + 16];
+        barrier(CLK_LOCAL_MEM_FENCE);
+        buf[ind] += buf[ind +  8];
+        barrier(CLK_LOCAL_MEM_FENCE);
+        buf[ind] += buf[ind +  4];
+        barrier(CLK_LOCAL_MEM_FENCE);
+        buf[ind] += buf[ind +  2];
+        barrier(CLK_LOCAL_MEM_FENCE);
+        buf[ind] += buf[ind +  1];
+        if (ind == 0) {
+            atomic_add(&out_buf[get_group_id(0)&7], buf[0]);
+        }
+    }
+
+
 }
