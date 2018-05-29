@@ -28,24 +28,19 @@ __kernel void vecdot(
 
     // the actual dot product
     int ind = get_local_id(0);
-    for (int i = lo; i < hi; ) {
-        //#pragma unroll
-        //for (int u = 0; u < 8; u++) {
-            sum += encrypt(i, key1) * encrypt(i, key2);
-            i++;
-        //}
+    for (int i = lo; i < hi; i++) {
+        sum += encrypt(i, key1) * encrypt(i, key2);
     }
     buf[ind] = sum;
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
     // local partial sum
-    #pragma unroll
     for (int u = 0; u <= 7; u++) {
         if (ind < (1<<(7-u))) {
             buf[ind] += buf[ind + (1<<(7-u))];
-            barrier(CLK_LOCAL_MEM_FENCE);
         }
+        barrier(CLK_LOCAL_MEM_FENCE);
     }
 
     if (ind == 0) {
