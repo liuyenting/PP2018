@@ -99,6 +99,7 @@ int main(int argc, char *argv[]) {
     const int ZERO = 0;
     int N;
     uint32_t key1, key2;
+    uint32_t sum[8];
     while (scanf("%d %" PRIu32 " %" PRIu32, &N, &key1, &key2) == 3) {
         status = CL_SUCCESS;
         status |= clSetKernelArg(kernel, 0, sizeof(int), &N);
@@ -133,8 +134,7 @@ int main(int argc, char *argv[]) {
         assert(status == CL_SUCCESS);
 
         // read out
-        uint32_t sum[8];
-        status = clEnqueueReadBuffer(command, d_buf, CL_TRUE, 0, sizeof(uint32_t)*8, &sum, 0, NULL, NULL);
+        status = clEnqueueReadBuffer(command, d_buf, CL_TRUE, 0, sizeof(uint32_t)*8, sum, 0, NULL, NULL);
         assert(status == CL_SUCCESS);
 
         // final summed up
