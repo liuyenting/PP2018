@@ -28,8 +28,12 @@ __kernel void vecdot(
 
     // the actual dot product
     int ind = get_local_id(0);
-    for (int i = lo; i < hi; i++) {
-        sum += encrypt(i, key1) * encrypt(i, key2);
+    for (int i = lo; i < hi; ) {
+        #pragma unroll
+        for (int u = 0; u < 8; u++) {
+            sum += encrypt(i, key1) * encrypt(i, key2);
+            u++;
+        }
     }
     buf[ind] = sum;
 
@@ -45,6 +49,6 @@ __kernel void vecdot(
     }
 
     if (ind == 0) {
-        out_buf[get_group_id(0)] = buf[0];
+        atomic_add(&out_buf[get_group_id(0)&7], buf[0]);
     }
 }

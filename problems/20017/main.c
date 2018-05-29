@@ -7,7 +7,7 @@
 #include <CL/cl.h>
 
 #define BLK_SIZE    256     // local buffer size
-#define BATCH_SIZE  1024     // single submission
+#define BATCH_SIZE  256     // single submission
 
 const char *
 clGetErrorString(cl_int error) {
