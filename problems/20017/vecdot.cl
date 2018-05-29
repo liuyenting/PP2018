@@ -32,7 +32,7 @@ __kernel void vecdot(
         #pragma unroll
         for (int u = 0; u < 8; u++) {
             sum += encrypt(i, key1) * encrypt(i, key2);
-            u++;
+            i++;
         }
     }
     buf[ind] = sum;
