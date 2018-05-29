@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
         );
         assert(status == CL_SUCCESS);
 
-        size_t global_size = {
+        size_t global_size[] = {
             ((((N+BATCH_SIZE - 1) / BATCH_SIZE)+BLK_SIZE - 1) / BLK_SIZE) * BLK_SIZE
         };
         size_t local_size[] = { BLK_SIZE };
