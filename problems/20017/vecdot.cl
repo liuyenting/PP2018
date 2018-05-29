@@ -49,6 +49,6 @@ __kernel void vecdot(
     }
 
     if (ind == 0) {
-        out_buf[get_group_id(0)] = buf[0];
+        atomic_add(&out_buf[get_group_id(0) & 7], buf[0]);
     }
 }
