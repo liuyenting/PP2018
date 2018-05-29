@@ -212,7 +212,6 @@ int main(int argc, char *argv[]) {
 
         // read out
         status = clEnqueueReadBuffer(command, d_buf, CL_TRUE, 0, sizeof(uint32_t)*8, sum, 0, NULL, NULL);
-        fprintf(stderr, "status=%s\n", clGetErrorString(status))
         assert(status == CL_SUCCESS);
 
         // final summed up
