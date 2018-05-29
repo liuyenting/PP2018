@@ -10,7 +10,7 @@ static inline uint32_t encrypt(uint32_t m, uint32_t key) {
     return (rotate_left(m, key&31) + key)^key;
 }
 
-__kernel void vecmul(
+__kernel void vecdot(
     int N,
     uint32_t key1, uint32_t key2,
     __global uint32_t* out_buf
