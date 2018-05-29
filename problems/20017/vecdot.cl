@@ -43,7 +43,7 @@ __kernel void vecdot(
     #pragma unroll
     for (int u = BLK_SIZE; u > 1; u >>= 1) {
         int offset = u/2;
-        if (ind+offset < u) {
+        if (ind < offset) {
             buf[ind] += buf[ind+offset];
         }
         barrier(CLK_LOCAL_MEM_FENCE);
