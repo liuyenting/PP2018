@@ -29,11 +29,11 @@ __kernel void vecdot(
     // the actual dot product
     int ind = get_local_id(0);
     for (int i = lo; i < hi; ) {
-        #pragma unroll
-        for (int u = 0; u < 8; u++) {
+        //#pragma unroll
+        //for (int u = 0; u < 8; u++) {
             sum += encrypt(i, key1) * encrypt(i, key2);
             i++;
-        }
+        //}
     }
     buf[ind] = sum;
 
