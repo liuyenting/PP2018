@@ -131,7 +131,8 @@ int main(int argc, char *argv[]) {
     char *source = load_program_source("vecdot.cl");
     assert(source != 0);
     // build program for all valid devices
-    #pragma omp parallel for
+    int compile_status = CL_SUCCESS:
+    #pragma omp parallel for reduction(| : compile_status)
     for (int i = 0; i < n_gpu; i++) {
         // create context
         context[i] = clCreateContext(0, 1, device_id+i, NULL, NULL, &status);
@@ -146,7 +147,8 @@ int main(int argc, char *argv[]) {
             clCreateProgramWithSource(context[i], 1, (const char **)&source, NULL, &status);
         if (!program || status != CL_SUCCESS) {
             fprintf(stderr, "failed to create compute program\n");
-            return EXIT_FAILURE;
+            compile_status |= status;
+            continue;
         }
 
         // program associates with context, so only 1 device is allowed
@@ -163,7 +165,8 @@ int main(int argc, char *argv[]) {
             assert(status == CL_SUCCESS);
             printf("=== dev %d ===\n%s\n", i, log_buf);
             free(log_buf);
-            return EXIT_FAILURE;
+            compile_status |= status;
+            continue;
         }
 
         // create kernel
@@ -171,6 +174,7 @@ int main(int argc, char *argv[]) {
         assert(kernel != 0 && status == CL_SUCCESS);
     }
     free(source);
+    assert(compile_status == CL_SUCCESS);
 
     /*
      * ===== INITIALIZE END =====
