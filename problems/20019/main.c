@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
 
     // create context
     cl_context context =
-        clCreateContext(0, 3, device_id, NULL, NULL, &status);
+        clCreateContext(0, n_gpu, device_id, NULL, NULL, &status);
     assert(status == CL_SUCCESS);
 
     // load and build program
