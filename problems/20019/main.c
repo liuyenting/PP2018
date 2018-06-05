@@ -5,8 +5,10 @@
 #include <sys/stat.h>
 
 #include <CL/cl.h>
+#include <omp.h>
 
 #define MAX_GPU     4       // maximum allowed gpu numbers
+#define MAX_CASES   10000   // maximum cases to process
 #define BLK_SIZE    256     // local buffer size
 #define BATCH_SIZE  256     // single submission
 
@@ -127,6 +129,7 @@ int main(int argc, char *argv[]) {
     cl_command_queue command[MAX_GPU];
     cl_program program[MAX_GPU];
     cl_kernel kernel[MAX_GPU];
+    cl_mem d_buf[MAX_GPU];
     // load program
     char *source = load_program_source("vecdot.cl");
     assert(source != 0);
@@ -151,7 +154,7 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        // program associates with context, so only 1 device is allowed
+        // program associates with context, only 1 device is allowed
         status = clBuildProgram(program[i], 1, device_id+i, NULL, NULL, NULL);
         if (status != CL_SUCCESS) {
             // retrieve build log
@@ -172,6 +175,10 @@ int main(int argc, char *argv[]) {
         // create kernel
         kernel[i] = clCreateKernel(program[i], "vecdot", &status);
         assert(kernel != 0 && status == CL_SUCCESS);
+
+        // create buffers
+        d_buf[i] = clCreateBuffer(context[i], CL_MEM_WRITE_ONLY, sizeof(uint32_t)*8, NULL, &status);
+        assert(status == CL_SUCCESS);
     }
     free(source);
     assert(compile_status == CL_SUCCESS);
@@ -180,25 +187,34 @@ int main(int argc, char *argv[]) {
      * ===== INITIALIZE END =====
      */
 
-    /* create buffers */
-    cl_mem d_buf;
-    d_buf = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(uint32_t)*8, NULL, &status);
-    assert(status == CL_SUCCESS);
+    // 1 thread per gpu
+    omp_set_num_threads(n_gpu);
 
     const int ZERO = 0;
-    int N;
-    uint32_t key1, key2;
-    while (scanf("%d %" PRIu32 " %" PRIu32, &N, &key1, &key2) == 3) {
+    int n_cases, N[MAX_CASES];
+    uint32_t key1[MAX_CASES], key2[MAX_CASES], result[MAX_CASES];
+    // read all the data
+    for (n_cases = 0;
+         scanf("%d %" PRIu32 " %" PRIu32, N+n_cases, key1+n_cases, key2+n_cases) == 3 &&
+         n_cases < MAX_CASES;
+         n_cases++) {
+    }
+    // distribute the tasks
+    #pragma omp parallel for schedule(dynamic, 8) private(status)
+    for (int i = 0; i < n_cases; i++) {
+        // 1 thread per gpu
+        int tid = omp_get_thread_num();
+
         status = CL_SUCCESS;
-        status |= clSetKernelArg(kernel, 0, sizeof(int), &N);
-        status |= clSetKernelArg(kernel, 1, sizeof(uint32_t), &key1);
-        status |= clSetKernelArg(kernel, 2, sizeof(uint32_t), &key2);
-        status |= clSetKernelArg(kernel, 3, sizeof(cl_mem), &d_buf);
+        status |= clSetKernelArg(kernel[tid], 0, sizeof(int), &N[i]);
+        status |= clSetKernelArg(kernel[tid], 1, sizeof(uint32_t), &key1[i]);
+        status |= clSetKernelArg(kernel[tid], 2, sizeof(uint32_t), &key2[i]);
+        status |= clSetKernelArg(kernel[tid], 3, sizeof(cl_mem), &d_buf[tid]);
         assert(status == CL_SUCCESS);
 
         // execute kernel
         status = clEnqueueFillBuffer(
-            command, d_buf,
+            command[tid], d_buf[tid],
             &ZERO,              // pattern
             sizeof(int),        // pattern size
             0,                  // buffer offset
@@ -212,7 +228,7 @@ int main(int argc, char *argv[]) {
         };
         size_t local_size[] = { BLK_SIZE };
         status = clEnqueueNDRangeKernel(
-            command, kernel,
+            command[tid], kernel[tid],
             1,              // work dimension
             NULL,           // global offset
             global_size,    // global size
@@ -224,7 +240,7 @@ int main(int argc, char *argv[]) {
         // read out
         uint32_t sum[8];
         status = clEnqueueReadBuffer(
-            command, d_buf,
+            command[tid], d_buf[tid],
             CL_TRUE,            // blocking read
             0,                  // read offset
             sizeof(uint32_t)*8, // bytes to read
@@ -237,12 +253,16 @@ int main(int argc, char *argv[]) {
         for (int i = 1; i < 8; i++) {
             sum[0] += sum[i];
         }
-        printf("%" PRIu32 "\n", sum[0]);
+        result[i] = sum[0];
+    }
+    // print the result
+    for (int i = 0; i < n_cases; i++) {
+        printf("%" PRIu32 "\n", result[i]);
     }
 
     // release resources
-    clReleaseMemObject(d_buf);
     for (int i = 0; i < n_gpu; i++) {
+        clReleaseMemObject(d_buf[i]);
         clReleaseKernel(kernel[i]);
         clReleaseProgram(program[i]);
         clReleaseCommandQueue(command[i]);
