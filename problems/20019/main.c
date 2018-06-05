@@ -171,7 +171,7 @@ int main(int argc, char *argv[]) {
         command[i] = clCreateCommandQueue(context, device_id[i], 0, &status);
         assert(status == CL_SUCCESS);
 
-        d_buf[i] = clCreateBuffer(context[i], CL_MEM_WRITE_ONLY, sizeof(uint32_t)*8, NULL, &status);
+        d_buf[i] = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(uint32_t)*8, NULL, &status);
         assert(status == CL_SUCCESS);
     }
     free(source);
