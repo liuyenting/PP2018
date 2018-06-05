@@ -141,19 +141,21 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    status = clBuildProgram(program, 3, device_id, NULL, NULL, NULL);
+    status = clBuildProgram(program, n_gpu, device_id, NULL, NULL, NULL);
     if (status != CL_SUCCESS) {
         // retrieve build log
         size_t len;
         char *log_buf;
-        status =
-            clGetProgramBuildInfo(program[i], device_id[i], CL_PROGRAM_BUILD_LOG, 0, NULL, &len);
-        log_buf = calloc(len+1, sizeof(char));
-        status =
-            clGetProgramBuildInfo(program[i], device_id[i], CL_PROGRAM_BUILD_LOG, len, log_buf, NULL);
-        assert(status == CL_SUCCESS);
-        printf("%s\n", log_buf);
-        free(log_buf);
+        for (int i = 0; i < n_gpu; i++) {
+            status =
+                clGetProgramBuildInfo(program, device_id[i], CL_PROGRAM_BUILD_LOG, 0, NULL, &len);
+            log_buf = calloc(len+1, sizeof(char));
+            status =
+                clGetProgramBuildInfo(program, device_id[i], CL_PROGRAM_BUILD_LOG, len, log_buf, NULL);
+            assert(status == CL_SUCCESS);
+            printf("=== dev %d ===\n%s\n", i, log_buf);
+            free(log_buf);
+        }
         return EXIT_FAILURE;
     }
 
@@ -219,7 +221,7 @@ int main(int argc, char *argv[]) {
         };
         size_t local_size[] = { BLK_SIZE };
         status = clEnqueueNDRangeKernel(
-            command[tid], kernel[tid],
+            command[tid], kernel,
             1,              // work dimension
             NULL,           // global offset
             global_size,    // global size
