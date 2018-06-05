@@ -125,63 +125,54 @@ int main(int argc, char *argv[]) {
     status = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, MAX_GPU, device_id, &n_gpu);
     assert(status == CL_SUCCESS);
 
-    cl_context context[MAX_GPU];
-    cl_command_queue command[MAX_GPU];
-    cl_program program[MAX_GPU];
-    cl_kernel kernel[MAX_GPU];
-    cl_mem d_buf[MAX_GPU];
-    // load program
+    // create context
+    cl_context context =
+        clCreateContext(0, 3, device_id, NULL, NULL, &status);
+    assert(status == CL_SUCCESS);
+
+    // load and build program
     char *source = load_program_source("vecdot.cl");
     assert(source != 0);
-    // build program for all valid devices
-    int compile_status = CL_SUCCESS;
-    #pragma omp parallel for reduction(| : compile_status)
+
+    cl_program program =
+        clCreateProgramWithSource(context, 1, (const char **)&source, NULL, &status);
+    if (!program || status != CL_SUCCESS) {
+        fprintf(stderr, "failed to create compute program\n");
+        return EXIT_FAILURE;
+    }
+
+    status = clBuildProgram(program, 3, device_id, NULL, NULL, NULL);
+    if (status != CL_SUCCESS) {
+        // retrieve build log
+        size_t len;
+        char *log_buf;
+        status =
+            clGetProgramBuildInfo(program[i], device_id[i], CL_PROGRAM_BUILD_LOG, 0, NULL, &len);
+        log_buf = calloc(len+1, sizeof(char));
+        status =
+            clGetProgramBuildInfo(program[i], device_id[i], CL_PROGRAM_BUILD_LOG, len, log_buf, NULL);
+        assert(status == CL_SUCCESS);
+        printf("%s\n", log_buf);
+        free(log_buf);
+        return EXIT_FAILURE;
+    }
+
+    // create kernel
+    cl_kernel kernel = clCreateKernel(program, "vecdot", &status);
+    assert(kernel != 0 && status == CL_SUCCESS);
+
+    cl_command_queue command[MAX_GPU];
+    cl_mem d_buf[MAX_GPU];
+    // create command queues and output buffers
+    #pragma omp parallel for
     for (int i = 0; i < n_gpu; i++) {
-        // create context
-        context[i] = clCreateContext(0, 1, device_id+i, NULL, NULL, &status);
+        command[i] = clCreateCommandQueue(context, device_id[i], 0, &status);
         assert(status == CL_SUCCESS);
 
-        // create command queue
-        command[i] = clCreateCommandQueue(context[i], device_id[i], 0, &status);
-        assert(status == CL_SUCCESS);
-
-        // build program
-        program[i] =
-            clCreateProgramWithSource(context[i], 1, (const char **)&source, NULL, &status);
-        if (!program || status != CL_SUCCESS) {
-            fprintf(stderr, "failed to create compute program\n");
-            compile_status |= status;
-            continue;
-        }
-
-        // program associates with context, only 1 device is allowed
-        status = clBuildProgram(program[i], 1, device_id+i, NULL, NULL, NULL);
-        if (status != CL_SUCCESS) {
-            // retrieve build log
-            size_t len;
-            char *log_buf;
-            status =
-                clGetProgramBuildInfo(program[i], device_id[i], CL_PROGRAM_BUILD_LOG, 0, NULL, &len);
-            log_buf = calloc(len+1, sizeof(char));
-            status =
-                clGetProgramBuildInfo(program[i], device_id[i], CL_PROGRAM_BUILD_LOG, len, log_buf, NULL);
-            assert(status == CL_SUCCESS);
-            printf("=== dev %d ===\n%s\n", i, log_buf);
-            free(log_buf);
-            compile_status |= status;
-            continue;
-        }
-
-        // create kernel
-        kernel[i] = clCreateKernel(program[i], "vecdot", &status);
-        assert(kernel != 0 && status == CL_SUCCESS);
-
-        // create buffers
         d_buf[i] = clCreateBuffer(context[i], CL_MEM_WRITE_ONLY, sizeof(uint32_t)*8, NULL, &status);
         assert(status == CL_SUCCESS);
     }
     free(source);
-    assert(compile_status == CL_SUCCESS);
 
     /*
      * ===== INITIALIZE END =====
@@ -206,10 +197,10 @@ int main(int argc, char *argv[]) {
         int tid = omp_get_thread_num();
 
         status = CL_SUCCESS;
-        status |= clSetKernelArg(kernel[tid], 0, sizeof(int), N+i);
-        status |= clSetKernelArg(kernel[tid], 1, sizeof(uint32_t), key1+i);
-        status |= clSetKernelArg(kernel[tid], 2, sizeof(uint32_t), key2+i);
-        status |= clSetKernelArg(kernel[tid], 3, sizeof(cl_mem), d_buf+tid);
+        status |= clSetKernelArg(kernel, 0, sizeof(int), N+i);
+        status |= clSetKernelArg(kernel, 1, sizeof(uint32_t), key1+i);
+        status |= clSetKernelArg(kernel, 2, sizeof(uint32_t), key2+i);
+        status |= clSetKernelArg(kernel, 3, sizeof(cl_mem), d_buf+tid);
         assert(status == CL_SUCCESS);
 
         // execute kernel
@@ -263,11 +254,11 @@ int main(int argc, char *argv[]) {
     // release resources
     for (int i = 0; i < n_gpu; i++) {
         clReleaseMemObject(d_buf[i]);
-        clReleaseKernel(kernel[i]);
-        clReleaseProgram(program[i]);
         clReleaseCommandQueue(command[i]);
-        clReleaseContext(context[i]);
     }
+    clReleaseKernel(kernel);
+    clReleaseProgram(program);
+    clReleaseContext(context);
 
     return 0;
 }
