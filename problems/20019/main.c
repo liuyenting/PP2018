@@ -131,7 +131,7 @@ int main(int argc, char *argv[]) {
     char *source = load_program_source("vecdot.cl");
     assert(source != 0);
     // build program for all valid devices
-    int compile_status = CL_SUCCESS:
+    int compile_status = CL_SUCCESS;
     #pragma omp parallel for reduction(| : compile_status)
     for (int i = 0; i < n_gpu; i++) {
         // create context
