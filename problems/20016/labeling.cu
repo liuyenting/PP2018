@@ -34,7 +34,7 @@ void patch_kernel(int *cuPos, const int strLen) {
     int index = threadIdx.x;
 
     if (pos_index >= strLen) {
-        continue;
+        return;
     }
 
     // cross blocks
