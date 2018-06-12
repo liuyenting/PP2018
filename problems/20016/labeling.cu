@@ -8,9 +8,6 @@
 #include <thrust/device_ptr.h>
 #include <thrust/execution_policy.h>
 
-__device__ __host__ int CeilDiv(int a, int b) { return (a-1)/b + 1; }
-__device__ __host__ int CeilAlign(int a, int b) { return CeilDiv(a, b) * b; }
-
 struct is_alphabet {
     __device__
     int operator()(const char c) const {
@@ -37,8 +34,6 @@ void CountPosition1(const char *text, int *pos, int text_size)
     );
 }
 
-namespace lab2 {
-
 __global__
 void count_position_kernel(
     const char *input,
@@ -50,15 +45,13 @@ void count_position_kernel(
         i < n;
         i += blockDim.x * gridDim.x
     ) {
-        if ((input[i] != '\n') && ((i == 0) || (input[i-1] == '\n'))) {
+        if ((input[i] != ' ') && ((i == 0) || (input[i-1] == ' '))) {
             int j = i, c = 1;
             do {
                 output[j++] = c++;
-            } while ((input[j] != '\n') && (j < n));
+            } while ((input[j] != ' ') && (j < n));
         }
     }
-}
-
 }
 
 void labeling(const char *text, int *pos, int text_size) {
@@ -66,5 +59,5 @@ void labeling(const char *text, int *pos, int text_size) {
     cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0);
 
     cudaMemset(pos, 0, text_size*sizeof(int));
-    lab2::count_position_kernel<<<32*numSMs, 256>>>(text, pos, text_size);
+    count_position_kernel<<<32*numSMs, 256>>>(text, pos, text_size);
 }
