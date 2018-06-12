@@ -3,6 +3,7 @@
 #include "labeling.h"
 
 #define DEBUG
+#define DUMP_ALL
 
 namespace {
     uint32_t seed = 0;
@@ -72,7 +73,9 @@ int main() {
                     sum++;
                 else
                     sum = 0;
+#ifndef DUMP_ALL
                 assert(sum == ret[i]);
+#endif
                 HEX ^= i*ret[i];
             }
             ed = clock() - st;
