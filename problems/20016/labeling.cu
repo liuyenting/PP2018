@@ -19,6 +19,19 @@ struct mark_spaces {
     }
 };
 
+struct sub_offset {
+    int *offset;
+
+    sub_offset(int *offset)
+        : offset(offset) {
+    }
+
+    __device__
+    int operator()(int index) {
+        return index-offset[index];
+    }
+};
+
 void labeling(const char *cuStr, int *cuPos, int strLen) {
     /*
         _ _ a  _ _ v  y  _ _ l  u  _  _  r  a  h
@@ -41,5 +54,18 @@ void labeling(const char *cuStr, int *cuPos, int strLen) {
         cuPos+strLen,   // end of the input sequence
         cuPos,          // beginning of the output sequence, inplace
         thrust::maximum<int>()
+    );
+
+    /*
+        _ _ a _ _ v y _ _ l u  _  _  r  a  h
+        0 0 1 3 4 4 4 7 8 8 8  11 12 12 12 12
+        0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+        0 0 1 0 0 1 2 0 0 1 2  0  0  1  2  3
+     */
+    thrust::tabulate(
+        thrust::device,
+        cuPos,          // beginning of the input sequence
+        cuPos+strLen,   // end of the input sequence
+        sub_offset(cuPos)
     );
 }
