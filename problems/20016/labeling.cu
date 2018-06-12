@@ -1,71 +1,70 @@
 #include "labeling.h"
 
-#include <thrust/tabulate.h>
+#include <cstdio>
+#include <cassert>
 #include <thrust/scan.h>
+#include <thrust/transform.h>
 #include <thrust/functional.h>
+#include <thrust/device_ptr.h>
 #include <thrust/execution_policy.h>
 
-struct mark_spaces {
-    const char *str;
+__device__ __host__ int CeilDiv(int a, int b) { return (a-1)/b + 1; }
+__device__ __host__ int CeilAlign(int a, int b) { return CeilDiv(a, b) * b; }
 
-    mark_spaces(const char *str)
-        : str(str) {
-    }
-
+struct is_alphabet {
     __device__
-    int operator()(int index) {
-        // https://thrust.github.io/doc/group__transformations.html#ga7a231d3ed7e33397e36a20f788a0548c
-        return (str[index] > ' ') ? -1 : index;
+    int operator()(const char c) const {
+        return (c != '\n') ? 1 : 0;
     }
 };
 
-struct sub_offset {
-    int *offset;
+void CountPosition1(const char *text, int *pos, int text_size)
+{
+    thrust::transform(
+        thrust::device,
+        text,
+        text + text_size,
+        pos,
+        is_alphabet()
+    );
 
-    sub_offset(int *offset)
-        : offset(offset) {
+    thrust::inclusive_scan_by_key(
+        thrust::device,
+        pos,
+        pos + text_size,
+        pos,
+        pos
+    );
+}
+
+namespace lab2 {
+
+__global__
+void count_position_kernel(
+    const char *input,
+    int *output,
+    const int n
+) {
+    for (
+        int i = blockIdx.x * blockDim.x + threadIdx.x;
+        i < n;
+        i += blockDim.x * gridDim.x
+    ) {
+        if ((input[i] != '\n') && ((i == 0) || (input[i-1] == '\n'))) {
+            int j = i, c = 1;
+            do {
+                output[j++] = c++;
+            } while ((input[j] != '\n') && (j < n));
+        }
     }
+}
 
-    __device__
-    int operator()(int index) {
-        return index-offset[index];
-    }
-};
+}
 
-void labeling(const char *cuStr, int *cuPos, int strLen) {
-    /*
-        _ _ a  _ _ v  y  _ _ l  u  _  _  r  a  h
-        0 1 -1 3 4 -1 -1 7 8 -1 -1 11 12 -1 -1 -1
-     */
-    thrust::tabulate(
-        thrust::device,
-        cuPos,          // beginning of the input sequence
-        cuPos+strLen,   // end of the input sequence
-        mark_spaces(cuStr)
-    );
+void labeling(const char *text, int *pos, int text_size) {
+    int numSMs;
+    cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0);
 
-    /*
-        _ _ a _ _ v y _ _ l u _  _  r  a  h
-        0 1 1 3 4 4 4 7 8 8 8 11 12 12 12 12
-     */
-    thrust::inclusive_scan(
-        thrust::device,
-        cuPos,          // beginning of the input sequence
-        cuPos+strLen,   // end of the input sequence
-        cuPos,          // beginning of the output sequence, inplace
-        thrust::maximum<int>()
-    );
-
-    /*
-        _ _ a _ _ v y _ _ l u  _  _  r  a  h
-        0 0 1 3 4 4 4 7 8 8 8  11 12 12 12 12
-        0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
-        0 0 1 0 0 1 2 0 0 1 2  0  0  1  2  3
-     */
-    thrust::tabulate(
-        thrust::device,
-        cuPos,          // beginning of the input sequence
-        cuPos+strLen,   // end of the input sequence
-        sub_offset(cuPos)
-    );
+    cudaMemset(pos, 0, text_size*sizeof(int));
+    lab2::count_position_kernel<<<32*numSMs, 256>>>(text, pos, text_size);
 }
