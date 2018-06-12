@@ -1,29 +1,45 @@
 #include "labeling.h"
 
+#define BLOCK_SIZE 512
+
 __global__
-void count_position_kernel(
-    const char *input,
-    int *output,
-    const int n
-) {
-    for (
-        int i = blockIdx.x * blockDim.x + threadIdx.x;
-        i < n;
-        i += blockDim.x * gridDim.x
-    ) {
-        if ((input[i] != ' ') && ((i == 0) || (input[i-1] == ' '))) {
-            int j = i, c = 1;
-            do {
-                output[j++] = c++;
-            } while ((input[j] != ' ') && (j < n));
+void labling_kernel(const char *cuStr, int *cuPos, const int strLen) {
+    __shared__ int local_pos[BLOCK_SIZE];
+
+    int pos_index = threadIdx.x + blockIdx.x*blockDim.x;
+    int index = threadIdx.x;
+
+    // thrust::tabulate, mark_spaces
+    local_pos[index] = (cuStr[index] > ' ') ? -1 : index;
+    __syncthreads();
+
+    // thrust::inclusive_scan, thrust::maximum<int>
+    for (int offset = 1; offset <= index; offset *= 2) {
+        if (local_pos[index] < local_pos[index-offset]) {
+            local_pos[index] = local_pos[index-offset];
         }
+        __syncthreads();
+    }
+    __syncthreads();
+
+    // thrust::tabulate, sub_offset
+    if (index < strLen) {
+        cuPos[pos_index] = index - local_pos[index];
+    } else {
+        return;
+    }
+    __syncthreads();
+
+    // cross block
+    if (blockIdx.x > 0 && cuPos[pos_index] == (index+1)) {
+        cuPos[pos_index] += cuPos[blockIdx.x*blockDim.x-1]
     }
 }
 
-void labeling(const char *text, int *pos, int text_size) {
+void labeling(const char *cuStr, int *cuPos, int strLen) {
     int numSMs;
     cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0);
 
-    cudaMemset(pos, 0, text_size*sizeof(int));
-    count_position_kernel<<<32*numSMs, 256>>>(text, pos, text_size);
+    int n_blocks = (strLen + BLOCK_SIZE-1) / BLOCK_SIZE;
+    labling_kernel<<<n_blocks, BLOCK_SIZE>>>(cuStr, cuPos, strLen);
 }
