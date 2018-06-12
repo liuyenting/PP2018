@@ -8,24 +8,25 @@ void labling_kernel(const char *cuStr, int *cuPos, const int strLen) {
 
     int pos_index = threadIdx.x + blockIdx.x*blockDim.x;
     int index = threadIdx.x;
+    
+    if (pos_index >= strLen) {
+	return;
+    }
 
     // thrust::tabulate, mark_spaces
-    local_pos[index] = (cuStr[pos_index] > ' ') ? -1 : pos_index;
+    local_pos[index] = (cuStr[pos_index] != ' ') ? -1 : index; 
     __syncthreads();
 
     // thrust::inclusive_scan, thrust::maximum<int>
     for (int offset = 1; offset <= index; offset *= 2) {
-        if (local_pos[index] < local_pos[index-offset]) {
+	if (local_pos[index] < local_pos[index-offset]) {
             local_pos[index] = local_pos[index-offset];
         }
         __syncthreads();
     }
-    __syncthreads();
 
     // thrust::tabulate, sub_offset
-    if (pos_index < strLen) {
-        cuPos[pos_index] = pos_index - local_pos[index];
-    }
+    cuPos[pos_index] = index - local_pos[index];
 }
 
 __global__
