@@ -68,6 +68,8 @@ int main() {
                 printf("%d", ret[i]);
                 if (i == n-1)
                     puts("");
+                else
+                    putchar(' ');
 #endif
                 if (s[i] > ' ')
                     sum++;
