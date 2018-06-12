@@ -25,21 +25,26 @@ void labling_kernel(const char *cuStr, int *cuPos, const int strLen) {
     // thrust::tabulate, sub_offset
     if (index < strLen) {
         cuPos[pos_index] = index - local_pos[index];
-    } else {
-        return;
     }
-    __syncthreads();
+}
 
-    // cross block
+__global__
+void patch_kernel(int *cuPos, const int strLen) {
+    int pos_index = threadIdx.x + blockIdx.x*blockDim.x;
+    int index = threadIdx.x;
+
+    if (pos_index >= strLen) {
+        continue;
+    }
+
+    // cross blocks
     if (blockIdx.x > 0 && cuPos[pos_index] == (index+1)) {
-        cuPos[pos_index] += cuPos[blockIdx.x*blockDim.x-1]
+        cuPos[pos_index] += cuPos[blockIdx.x*blockDim.x-1];
     }
 }
 
 void labeling(const char *cuStr, int *cuPos, int strLen) {
-    int numSMs;
-    cudaDeviceGetAttribute(&numSMs, cudaDevAttrMultiProcessorCount, 0);
-
     int n_blocks = (strLen + BLOCK_SIZE-1) / BLOCK_SIZE;
     labling_kernel<<<n_blocks, BLOCK_SIZE>>>(cuStr, cuPos, strLen);
+    patch_kernel<<<n_blocks, BLOCK_SIZE>>>(cuPos, strLen);
 }
